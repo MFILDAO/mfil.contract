@@ -35,20 +35,6 @@ contract MFacade is MBase {
 
     event ProfitDurSecondsChangedEvent(address account, uint256 value);
 
-    event ExchangeInEvent(
-        address account,
-        uint256 amount,
-        string filAddr,
-        uint256 txID
-    );
-
-    event ExchangeOutEvent(
-        address account,
-        uint256 amount,
-        string filAddr,
-        uint256 txID
-    );
-
     event SwapIn(
         address account,
         uint256 amount,
@@ -253,45 +239,6 @@ contract MFacade is MBase {
         );
     }
 
-    function _exchange(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        bool isFilToMFil,
-        ExchangeParams memory inputParams
-    ) internal {
-        _checkAndUpdateTxId(
-            isFilToMFil ? ActionType.ExchangeIn : ActionType.ExchangeOut,
-            inputParams.txID
-        );
-        require(inputParams.account == _msgSender(), "permision denied");
-
-        string memory message = string(
-            abi.encodePacked(
-                "action=",
-                isFilToMFil ? "exchangeIn" : "exchangeOut",
-                "txid=",
-                Strings.toString(inputParams.txID),
-                "account=",
-                Strings.toHexString(inputParams.account),
-                "amount=",
-                Strings.toString(inputParams.amount),
-                "filAddr=",
-                inputParams.filAddr
-            )
-        );
-
-        IConfig config = configContract();
-        _checkSign(message, hash, v, r, s, config.encodeAddress());
-
-        IMStaker(config.mstakerAddress()).exchange(
-            inputParams.account,
-            inputParams.amount,
-            isFilToMFil
-        );
-    }
-
     function _swap(
         bytes32 hash,
         uint8 v,
@@ -361,38 +308,6 @@ contract MFacade is MBase {
     ) public {
         _swap(hash, v, r, s, false, inputParams);
         emit SwapOut(
-            inputParams.account,
-            inputParams.amount,
-            inputParams.filAddr,
-            inputParams.txID
-        );
-    }
-
-    function exchangeIn(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        ExchangeParams calldata inputParams
-    ) public {
-        _exchange(hash, v, r, s, true, inputParams);
-        emit ExchangeInEvent(
-            inputParams.account,
-            inputParams.amount,
-            inputParams.filAddr,
-            inputParams.txID
-        );
-    }
-
-    function exchangeOut(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        ExchangeParams calldata inputParams
-    ) public {
-        _exchange(hash, v, r, s, false, inputParams);
-        emit ExchangeOutEvent(
             inputParams.account,
             inputParams.amount,
             inputParams.filAddr,
